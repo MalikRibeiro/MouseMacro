@@ -4,7 +4,7 @@ import pynput.mouse
 import pynput.keyboard
 from pynput.keyboard import Key, KeyCode
 from pynput.mouse import Button
-from .utils import get_virtual_desktop_bounds, denormalize_coordinate
+from .utils import get_virtual_desktop_bounds, denormalize_coordinate, is_modifier_key
 
 # Control character map from original code
 CONTROL_CHAR_MAP = {
@@ -24,6 +24,8 @@ class Player:
         self.is_playing = False
         self.is_paused = False
         self.thread = None
+        self._pressed_modifiers = set()
+        self._modifier_lock = threading.Lock()
 
     def play(self, macro_data, loops=1, interval=0, on_finish=None):
         if self.is_playing:
@@ -33,6 +35,8 @@ class Player:
         self.pause_event.set()  # Garante que não está pausado ao iniciar
         self.is_playing = True
         self.is_paused = False
+        with self._modifier_lock:
+            self._pressed_modifiers.clear()
         
         self.thread = threading.Thread(
             target=self._play_worker,
@@ -40,33 +44,36 @@ class Player:
         )
         self.thread.start()
     
-    def pause(self):
+    def pause(self, safety_release=False):
         """Pausa a reprodução."""
         if self.is_playing and not self.is_paused:
             self.pause_event.clear()  # clear = pausado
             self.is_paused = True
-            print("Playback paused.")
+            self._log("Playback paused.")
+            if safety_release:
+                self._release_all_modifiers("pause(safety_release=True)")
     
     def resume(self):
         """Retoma a reprodução."""
         if self.is_playing and self.is_paused:
             self.pause_event.set()  # set = não pausado (retoma)
             self.is_paused = False
-            print("Playback resumed.")
+            self._log("Playback resumed.")
     
-    def toggle_pause(self):
+    def toggle_pause(self, safety_release=False):
         """Alterna entre pausado e retomado."""
         if self.is_paused:
             self.resume()
         else:
-            self.pause()
+            self.pause(safety_release=safety_release)
 
     def stop(self):
         if self.is_playing:
             self.stop_event.set()
             # Wait for thread to finish? No, just signal.
             # The worker checks stop_event frequently.
-            print("Stop signal sent to player.")
+            self._log("Stop signal sent to player.")
+            self._release_all_modifiers("stop() called")
 
     def _play_worker(self, macro_data, loops, interval, on_finish):
         events = macro_data.get("events", [])
@@ -91,7 +98,7 @@ class Player:
                 if self.stop_event.is_set():
                     break
                 
-                print(f"Starting loop {i+1}/{loops}")
+                self._log(f"Starting loop {i+1}/{loops}")
                 last_time = 0.0
                 
                 for event in events:
@@ -126,12 +133,13 @@ class Player:
                         break
                         
         except Exception as e:
-            print(f"Error during playback: {e}")
+            self._log(f"Error during playback: {e}")
         finally:
             self.is_playing = False
             self.is_paused = False
             self.pause_event.set()  # Reseta o estado de pausa
-            print("Playback finished.")
+            self._release_all_modifiers("playback finished")
+            self._log("Playback finished.")
             if on_finish:
                 on_finish()
 
@@ -166,7 +174,7 @@ class Player:
         
         # Valida se a coordenada está dentro dos limites válidos
         if not self._is_coordinate_valid(current_x, current_y, current_bounds):
-            print(f"Warning: Coordinate ({current_x}, {current_y}) is outside valid screen bounds. Skipping action.")
+            self._log(f"Warning: Coordinate ({current_x}, {current_y}) is outside valid screen bounds. Skipping action.")
             return None
         
         return (current_x, current_y)
@@ -223,12 +231,16 @@ class Player:
                 self.mouse.release(button)
             
         elif action == 'press':
-            key = self._get_key_from_string(event['key'])
+            key_str = event.get('key')
+            key = self._get_key_from_string(key_str)
             self.keyboard.press(key)
+            self._track_modifier_press(key_str)
             
         elif action == 'release':
-            key = self._get_key_from_string(event['key'])
+            key_str = event.get('key')
+            key = self._get_key_from_string(key_str)
             self.keyboard.release(key)
+            self._track_modifier_release(key_str)
             
         elif action == 'scroll':
             # Verificar se as chaves 'dx' e 'dy' existem antes de executar
@@ -250,3 +262,37 @@ class Player:
 
     def _get_button_from_string(self, button_str):
         return getattr(Button, button_str.split('.')[1])
+
+    def _track_modifier_press(self, key_str):
+        if not is_modifier_key(key_str):
+            return
+        with self._modifier_lock:
+            if key_str not in self._pressed_modifiers:
+                self._pressed_modifiers.add(key_str)
+                self._log(f"Tracking modifier press: {key_str}")
+
+    def _track_modifier_release(self, key_str):
+        if not is_modifier_key(key_str):
+            return
+        with self._modifier_lock:
+            if key_str in self._pressed_modifiers:
+                self._pressed_modifiers.discard(key_str)
+                self._log(f"Tracking modifier release: {key_str}")
+
+    def _release_all_modifiers(self, reason=""):
+        with self._modifier_lock:
+            if not self._pressed_modifiers:
+                return
+            stuck_modifiers = list(self._pressed_modifiers)
+            self._pressed_modifiers.clear()
+        self._log(f"Releasing {len(stuck_modifiers)} modifier(s) ({reason}).")
+        for key_str in stuck_modifiers:
+            try:
+                key_obj = self._get_key_from_string(key_str)
+                self.keyboard.release(key_obj)
+                self._log(f"Released modifier: {key_str}")
+            except Exception as exc:
+                self._log(f"Failed to release modifier {key_str}: {exc}")
+
+    def _log(self, message):
+        print(f"[Player] {message}")

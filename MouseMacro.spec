@@ -3,7 +3,7 @@ from PyInstaller.utils.hooks import collect_all
 
 datas = [('src', 'src'), ('ui', 'ui')]
 binaries = []
-hiddenimports = ['pynput.keyboard._win32', 'pynput.mouse._win32', 'screeninfo']
+hiddenimports = ['screeninfo']
 tmp_ret = collect_all('customtkinter')
 datas += tmp_ret[0]; binaries += tmp_ret[1]; hiddenimports += tmp_ret[2]
 

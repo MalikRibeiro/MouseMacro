@@ -2,7 +2,7 @@ import time
 import threading
 import pynput.mouse
 import pynput.keyboard
-from .utils import get_virtual_desktop_bounds, normalize_coordinate
+from .utils import get_virtual_desktop_bounds, normalize_coordinate, is_modifier_key
 
 class Recorder:
     def __init__(self):
@@ -14,6 +14,8 @@ class Recorder:
         self.keyboard_listener = None
         self.keyboard_listener = None
         self._lock = threading.Lock()
+        self._modifier_lock = threading.Lock()
+        self._pressed_modifiers = set()
         self.pause_event = threading.Event()  # Event para pausar/reiniciar gravação
         self.pause_event.set()  # Inicia não pausado (set = não pausado)
         self.is_paused = False
@@ -37,6 +39,8 @@ class Recorder:
         # Reset optimization state
         self.last_move_time = self.start_time
         self.last_move_pos = pynput.mouse.Controller().position
+        with self._modifier_lock:
+            self._pressed_modifiers.clear()
         
         self.mouse_listener = pynput.mouse.Listener(
             on_move=self._on_move,
@@ -63,6 +67,7 @@ class Recorder:
             self.keyboard_listener.stop()
             
         print("Recording stopped.")
+        self._report_unreleased_modifiers()
         self.is_paused = False
         self.pause_event.set()  # Reseta o estado de pausa
         return {
@@ -149,6 +154,7 @@ class Recorder:
                 'action': 'press',
                 'key': key_val
             })
+            self._track_modifier_state(key_val, pressed=True)
 
     def _on_release(self, key):
         if self.is_recording and self.pause_event.is_set():
@@ -163,3 +169,25 @@ class Recorder:
                 'action': 'release',
                 'key': key_val
             })
+            self._track_modifier_state(key_val, pressed=False)
+
+    def _track_modifier_state(self, key_str, pressed):
+        if not is_modifier_key(key_str):
+            return
+        with self._modifier_lock:
+            if pressed:
+                if key_str not in self._pressed_modifiers:
+                    self._pressed_modifiers.add(key_str)
+                    print(f"[Recorder] Modifier pressed: {key_str}")
+            else:
+                if key_str in self._pressed_modifiers:
+                    self._pressed_modifiers.discard(key_str)
+                    print(f"[Recorder] Modifier released: {key_str}")
+
+    def _report_unreleased_modifiers(self):
+        with self._modifier_lock:
+            if not self._pressed_modifiers:
+                return
+            stuck = list(self._pressed_modifiers)
+            self._pressed_modifiers.clear()
+        print(f"[Recorder] Warning: {len(stuck)} modifier(s) still pressed at stop: {', '.join(stuck)}")

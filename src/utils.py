@@ -3,6 +3,17 @@ import os
 import pyautogui
 import screeninfo
 
+# Conjunto base de teclas modificadoras reconhecidas
+MODIFIER_KEYS = {
+    'key.shift', 'key.shift_l', 'key.shift_r',
+    'key.ctrl', 'key.ctrl_l', 'key.ctrl_r',
+    'key.alt', 'key.alt_l', 'key.alt_r',
+    'key.alt_gr',
+    'key.cmd', 'key.cmd_l', 'key.cmd_r',
+    'key.super', 'key.super_l', 'key.super_r',
+    'shift', 'ctrl', 'alt', 'altgr', 'cmd', 'super'
+}
+
 def get_virtual_desktop_bounds():
     """
     Detecta o Virtual Desktop Bounding Box (caixa delimitadora de todas as telas combinadas).
@@ -103,6 +114,30 @@ def denormalize_coordinate(normalized_value, offset, total_size):
         Coordenada absoluta (pode ser negativa)
     """
     return int((normalized_value * total_size) + offset)
+
+def _normalize_key_string(key_str):
+    """Normaliza a representação textual de uma tecla para comparação."""
+    if key_str is None:
+        return None
+    text = str(key_str).strip()
+    if not text:
+        return None
+    # Remove setas de hotkeys (<shift>) e converte para minúsculas
+    if text.startswith('<') and text.endswith('>'):
+        text = text[1:-1]
+    return text.lower()
+
+def is_modifier_key(key_str):
+    """Retorna True se a tecla informada for um modificador (Shift/Ctrl/Alt/Cmd)."""
+    normalized = _normalize_key_string(key_str)
+    if normalized is None:
+        return False
+    if normalized in MODIFIER_KEYS:
+        return True
+    # 'key.' prefix already lower case nesse ponto
+    if normalized.startswith('key.') and normalized in MODIFIER_KEYS:
+        return True
+    return False
 
 def save_json(filepath, data):
     """Saves data to a JSON file."""
