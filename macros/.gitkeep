@@ -1,0 +1,3 @@
+# Este arquivo garante que o diretório macros seja versionado no Git
+# Os arquivos .json dentro deste diretório são ignorados pelo .gitignore
+

@@ -1,0 +1,182 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+# Geralmente mantemos o .spec, mas se quiser ignorar, descomente a linha abaixo
+# *.spec
+
+# PyInstaller build files
+build/
+dist/
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+#   .python-version
+
+# pipenv
+#   De acordo com a documentação do pipenv, é recomendado incluir Pipfile.lock no controle de versão.
+#   No entanto, em caso de # colaboração, se você quiser garantir que todos usem a mesma versão, descomente a linha abaixo.
+#   Pipfile.lock
+
+# poetry
+#   Similar ao Pipfile.lock, Poetry também cria um arquivo de lock.
+#   poetry.lock
+
+# pdm
+#   Similar ao Pipfile, PDM também cria um arquivo de lock.
+#   pdm.lock
+
+# PEP 582; usado por padrão pelo pdm para armazenar dependências do projeto
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.env
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Arquivos específicos do projeto
+# Configurações do usuário (não devem ser versionadas)
+settings.json
+
+# Macros do usuário (não devem ser versionadas)
+macros/*.json
+
+# Manter o diretório macros mas ignorar os arquivos dentro
+!macros/.gitkeep
+
+# Arquivos temporários
+*.tmp
+*.bak
+*.log
+
+# Arquivos do Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# Arquivos do macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+
+# Arquivos do Linux
+*~
+.directory
+.Trash-*
+
